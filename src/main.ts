@@ -1,6 +1,6 @@
 /**
  * Todo Application
- * Features: Completion toggle, Due Dates
+ * Features: Completion toggle, Due Dates, Local Storage
  */
 
 
