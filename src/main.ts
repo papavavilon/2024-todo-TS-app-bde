@@ -1,11 +1,6 @@
 /**
  * Todo Application
- * Features: Completion toggle, Due Dates, Local Storage
- */
-
-
-/**
- * REDO it. More streqamlined and better structure -
+ * Features: Completion toggle, Due Dates, Priority, Progress Bar, Local Storage
  */
 
 
@@ -38,6 +33,8 @@ const errorMessage = document.getElementById('error-message') as HTMLParagraphEl
 const dueDateInput = document.getElementById('due-date') as HTMLInputElement;
 const prioritySelect = document.getElementById('priority') as HTMLSelectElement;
 const sortButton = document.getElementById('sort-priority') as HTMLButtonElement;
+const progressBar = document.getElementById('progress-bar') as HTMLDivElement;
+const progressText = document.getElementById('progress-text') as HTMLSpanElement;
 const clearAllButton = document.getElementById('clear-all') as HTMLButtonElement;
 
 const STORAGE_KEY = 'todos';
@@ -140,6 +137,8 @@ const renderTodos = (): void => { // void because no return - what we are doing 
         addEditButtonListener(li, todo.id); // Add event listener to the remove button. li is the parent element, and todo.id is the ID of the todo.
         todoList.appendChild(li); // Append the list item to the ul element
     });
+
+    updateProgressBar();
 };
 
 // Step 8: Function to removes all a todo by ID
@@ -246,6 +245,18 @@ export const sortTodosByPriority = (): void => {
     renderTodos();
     console.log('Todos sorted by priority');
 };
+
+export const updateProgressBar = (): void => {
+    if (!progressBar || !progressText) return;
+
+    const total = todos.length;
+    const completed = todos.filter(t => t.completed).length;
+    const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    progressBar.style.width = `${percentage}%`;
+    progressText.textContent = `${completed} / ${total} completed (${percentage}%)`;
+};
+
 
 export const clearAllTodos = (): void => {
     if (todos.length === 0) {

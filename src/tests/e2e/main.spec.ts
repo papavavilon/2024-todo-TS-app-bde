@@ -214,6 +214,51 @@ test('Sort todos by priority', async ({ page }) => {
     await expect(items.nth(2)).toContainText('Low item');
 });
 
+test.describe('Progress Bar', () => {
+    test('updates correctly when adding, toggling, and removing todos', async ({ page }) => {
+        const input = page.locator('#todo-input');
+        const todoList = page.locator('#todo-list');
+        const progressBar = page.locator('#progress-bar');
+        const progressText = page.locator('#progress-text');
+        const submitBtn = page.locator('button[type="submit"]');
+
+        await expect(progressText).toHaveText('0 / 0 completed (0%)');
+        await expect(progressBar).toHaveAttribute('style', 'width: 0%;');
+
+        await input.fill('Item 1');
+        await submitBtn.click();
+        await expect(progressText).toHaveText('0 / 1 completed (0%)');
+        await expect(progressBar).toHaveAttribute('style', 'width: 0%;');
+
+        await input.fill('Item 2');
+        await submitBtn.click();
+        await expect(progressText).toHaveText('0 / 2 completed (0%)');
+        await expect(progressBar).toHaveAttribute('style', 'width: 0%;');
+
+        const item1 = todoList.locator('.todo-item', { hasText: 'Item 1' });
+        await item1.locator('.todo-checkbox').click();
+        await expect(progressText).toHaveText('1 / 2 completed (50%)');
+        await expect(progressBar).toHaveAttribute('style', 'width: 50%;');
+
+        const item2 = todoList.locator('.todo-item', { hasText: 'Item 2' });
+        await item2.locator('.todo-checkbox').click();
+        await expect(progressText).toHaveText('2 / 2 completed (100%)');
+        await expect(progressBar).toHaveAttribute('style', 'width: 100%;');
+
+        await item1.locator('.todo-checkbox').click();
+        await expect(progressText).toHaveText('1 / 2 completed (50%)');
+        await expect(progressBar).toHaveAttribute('style', 'width: 50%;');
+
+        await item2.locator('.remove-btn').click();
+        await expect(progressText).toHaveText('0 / 1 completed (0%)');
+        await expect(progressBar).toHaveAttribute('style', 'width: 0%;');
+
+        await item1.locator('.remove-btn').click();
+        await expect(progressText).toHaveText('0 / 0 completed (0%)');
+        await expect(progressBar).toHaveAttribute('style', 'width: 0%;');
+    });
+});
+
 test.describe('Persistence and Clear All', () => {
     async function addTodo(page: any, text: string) {
         await page.locator('#todo-input').fill(text);

@@ -21,6 +21,7 @@
 
     --danger-color: #dc3545;
     --border-color: #ccc;
+    --primary-color: #28a745;
 }
 
 body {
@@ -75,7 +76,7 @@ h1 {
     margin: 0 auto;
     padding: 10px;
     border: none;
-    background: #28a745;
+    background: var(--primary-color);
     color: #fff;
     border-radius: 3px;
     cursor: pointer;
@@ -243,11 +244,38 @@ h1 {
 }
 
 .priority-badge.priority-low {
-    background-color: #28a745;
+    background-color: var(--primary-color);
 }
 
 .todo-item.completed .priority-badge {
     background-color: #e9ecef;
     color: #666;
     text-decoration: line-through;
+}
+
+.progress-container {
+    margin-bottom: 20px;
+}
+
+.progress-bar-wrapper {
+    width: 100%;
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), #20c997);
+    transition: width 0.3s ease;
+    width: 0;
+}
+
+.progress-text {
+    display: block;
+    text-align: center;
+    font-size: 0.9em;
+    color: #666;
 }
