@@ -8,37 +8,27 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v5
         with:
-          node-version: 22
+          persist-credentials: false
 
-      - run: npm ci
-      - run: npm run build
-      - name: Upload production-ready build files
-        uses: actions/upload-pages-artifact@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v6
         with:
-          name: github-pages
-          path: ./dist
+          node-version: '20.x'
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
+      - name: Install Deps
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to production url
+        uses: JamesIves/github-pages-deploy-action@4.1.4
         with:
-          name: github-pages
-          path: ./dist
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          branch: gh-pages
+          folder: dist
