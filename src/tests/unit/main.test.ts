@@ -6,6 +6,10 @@ let mod: any;
 
 beforeEach(async () => {
     document.body.innerHTML = `
+    <div class="progress-container">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+        <span class="progress-text" id="progress-text"></span>
+    </div>
     <form class="todo-form">
       <input id="todo-input" />
       <input id="due-date" />
@@ -192,5 +196,60 @@ describe('sortTodosByPriority', () => {
         expect(mod.todos.length).toBe(0);
         sortTodosByPriority();
         expect(mod.todos.length).toBe(0);
+    });
+});
+
+// New test suite for the progress bar
+describe('updateProgressBar', () => {
+    let progressBar: HTMLDivElement;
+    let progressText: HTMLSpanElement;
+
+    beforeEach(() => {
+        progressBar = document.getElementById('progress-bar') as HTMLDivElement;
+        progressText = document.getElementById('progress-text') as HTMLSpanElement;
+        mod.todos.length = 0; // Clear todos array
+    });
+
+    it('shows 0% for an empty list (0 / 0)', () => {
+        mod.updateProgressBar();
+        expect(progressBar.style.width).toBe('0%');
+        expect(progressText.textContent).toBe('0 / 0 completed (0%)');
+    });
+
+    it('shows 0% when no items are completed (0 / 2)', () => {
+        mod.todos.push({id: 1, text: 'a', completed: false});
+        mod.todos.push({id: 2, text: 'b', completed: false});
+
+        mod.updateProgressBar();
+        expect(progressBar.style.width).toBe('0%');
+        expect(progressText.textContent).toBe('0 / 2 completed (0%)');
+    });
+
+    it('shows 50% when half of items are completed (1 / 2)', () => {
+        mod.todos.push({id: 1, text: 'a', completed: true});
+        mod.todos.push({id: 2, text: 'b', completed: false});
+
+        mod.updateProgressBar();
+        expect(progressBar.style.width).toBe('50%');
+        expect(progressText.textContent).toBe('1 / 2 completed (50%)');
+    });
+
+    it('shows 100% when all items are completed (2 / 2)', () => {
+        mod.todos.push({id: 1, text: 'a', completed: true});
+        mod.todos.push({id: 2, text: 'b', completed: true});
+
+        mod.updateProgressBar();
+        expect(progressBar.style.width).toBe('100%');
+        expect(progressText.textContent).toBe('2 / 2 completed (100%)');
+    });
+
+    it('correctly rounds percentages (1 / 3)', () => {
+        mod.todos.push({id: 1, text: 'a', completed: true});
+        mod.todos.push({id: 2, text: 'b', completed: false});
+        mod.todos.push({id: 3, text: 'c', completed: false});
+
+        mod.updateProgressBar();
+        expect(progressBar.style.width).toBe('33%'); // Math.round(33.3...)
+        expect(progressText.textContent).toBe('1 / 3 completed (33%)');
     });
 });
