@@ -69,21 +69,32 @@ const renderTodos = (): void => { // void because no return - what we are doing 
             li.classList.add('completed');
         }
 
-        const dueDateDisplay = todo.dueDate
-            ? `<span class="due-date">${new Date(todo.dueDate).toLocaleDateString()}</span>`
-            : '';
+        let dueDateDisplay = '';
+        if (todo.dueDate) {
+            const now = new Date();
+            const due = new Date(todo.dueDate);
+            const diffMs = due.getTime() - now.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffMs < 0) {
+                dueDateDisplay = `<span class="due-date overdue">Overdue by ${Math.abs(diffDays)} day(s)</span>`;
+                li.classList.add('overdue');
+            } else {
+                dueDateDisplay = `<span class="due-date">Due in ${diffDays} day(s)</span>`;
+            }
+        }
 
         li.innerHTML = `
-    <div class="todo-content">
-      <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} />
-      <span class="todo-text">${todo.text}</span>
-      ${dueDateDisplay}
-      <div class="todo-actions">
-        <button class="edit-btn">Edit</button>
-        <button class="remove-btn">Remove</button>
-      </div>
-    </div>
-    `;
+            <div class="todo-content">
+                <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} />
+                <span class="todo-text">${todo.text}</span>
+                ${dueDateDisplay}
+                <div class="todo-actions">
+                    <button class="edit-btn">Edit</button>
+                    <button class="remove-btn">Remove</button>
+                </div>
+            </div>
+        `;
         addCheckboxListener(li, todo.id);
 
         // addRemoveButtonListener is further down in the code. We have onclick in the function instead of template literals. More safe to use addEventListener.
