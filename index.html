@@ -15,6 +15,11 @@
         </div>
         <div class="form-row form-options">
             <input type="date" id="due-date" title="Due date (optional)"/>
+            <select id="priority" title="Priority level">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+            </select>
         </div>
         <div class="form-row">
             <button type="submit">Add</button>
@@ -22,6 +27,11 @@
     </form>
     <!-- error handling message : CSS added:: .input-error & #error-message -->
     <p id="error-message">Please enter a todo item</p>
+
+    <div class="action-buttons">
+        <button id="sort-priority" class="secondary-btn">Sort by Priority</button>
+    </div>
+
     <ul class="todo-list" id="todo-list"></ul>
 
     <input type="color" id="colorPicker"/>

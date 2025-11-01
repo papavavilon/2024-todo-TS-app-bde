@@ -47,9 +47,6 @@ h1 {
     text-align: center;
 }
 
-.todo-form {
-}
-
 .todo-form input[type="text"] {
     flex: 1;
     padding: 10px;
@@ -63,6 +60,14 @@ h1 {
     border: 1px solid var(--border-color);
     border-radius: 3px;
     cursor: pointer;
+}
+
+.todo-form select {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    cursor: pointer;
+    background-color: white;
 }
 
 .todo-form button[type='submit'] {
@@ -183,4 +188,39 @@ h1 {
     background: #ffe6e6;
     color: var(--danger-color);
     font-weight: 600;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.secondary-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.secondary-btn {
+    background: #6c757d;
+    color: white;
+}
+
+.secondary-btn:hover {
+    background: #5a6268;
+}
+
+.priority-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
 }
