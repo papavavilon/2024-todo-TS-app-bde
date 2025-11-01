@@ -3,17 +3,10 @@ name: CD
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
 
     steps:
       - uses: actions/checkout@v3
@@ -24,5 +17,25 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages
+          path: ./dist
 
-      - uses: actions/deploy-pages@v4
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: ./dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
