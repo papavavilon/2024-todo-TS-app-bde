@@ -1,6 +1,6 @@
 /**
  * Todo Application
- * Features: Completion toggle, Due Dates
+ * Features: Completion toggle, Due Dates, Local Storage
  */
 
 
@@ -38,6 +38,33 @@ const errorMessage = document.getElementById('error-message') as HTMLParagraphEl
 const dueDateInput = document.getElementById('due-date') as HTMLInputElement;
 const prioritySelect = document.getElementById('priority') as HTMLSelectElement;
 const sortButton = document.getElementById('sort-priority') as HTMLButtonElement;
+const clearAllButton = document.getElementById('clear-all') as HTMLButtonElement;
+
+const STORAGE_KEY = 'todos';
+
+export const loadTodosFromStorage = (): void => {
+    try {
+        const storedTodos = localStorage.getItem(STORAGE_KEY);
+        if (storedTodos) {
+            todos = JSON.parse(storedTodos);
+            console.log('Todos loaded from storage:', todos);
+        }
+    } catch (error) {
+        console.error('Error loading todos from storage:', error);
+        errorMessage.textContent = 'Error loading saved todos';
+        errorMessage.style.display = 'block';
+    }
+};
+
+
+export const saveTodosToStorage = (): void => {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+        console.log('Todos saved to storage');
+    } catch (error) {
+        console.error('Error saving todos to storage:', error);
+    }
+};
 
 
 // Step 5: Function to add a new todo
@@ -59,6 +86,8 @@ export const addTodo = (text: string, dueDate?: string, priority: priority = 'me
 // Step 6: Function to render the list of todos
 // Function to render the list of todos: This function updates the DOM to display the current list of todos.
 const renderTodos = (): void => { // void because no return - what we are doing is updating the DOM
+    saveTodosToStorage();
+
     // Clear the current list
     todoList.innerHTML = '';
 
@@ -245,8 +274,22 @@ export const sortTodosByPriority = (): void => {
     console.log('Todos sorted by priority');
 };
 
+export const clearAllTodos = (): void => {
+    if (todos.length === 0) {
+        alert('No todos to clear');
+        return;
+    }
+
+    if (confirm('Are you sure you want to clear all todos? This cannot be undone.')) {
+        todos = [];
+        renderTodos();
+        console.log('All todos cleared');
+    }
+};
+
 
 const initializeApp = (): void => {
+    loadTodosFromStorage();
     renderTodos();
     initializeColorPicker();
     console.log('Todo app initialized');
@@ -254,6 +297,10 @@ const initializeApp = (): void => {
 
 if (sortButton) {
     sortButton.addEventListener('click', sortTodosByPriority);
+}
+
+if (clearAllButton) {
+    clearAllButton.addEventListener('click', clearAllTodos);
 }
 
 if (document.readyState === 'loading') {
