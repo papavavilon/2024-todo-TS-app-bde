@@ -2,10 +2,7 @@ name: CD
 
 on:
   push:
-    branches: [ main, dev ]
-  pull_request:
-    branches: [ main, dev ]
-  workflow_dispatch:
+    branches: [ main ]
 
 jobs:
   build:
@@ -20,8 +17,7 @@ jobs:
 
       - run: npm ci
       - run: npm run build
-      - name: Upload production-ready build files
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v3
         with:
           name: github-pages
           path: ./dist
@@ -29,16 +25,17 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
     permissions:
       contents: read
       pages: write
       id-token: write
+    
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: github-pages
           path: ./dist
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4
