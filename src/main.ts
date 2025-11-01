@@ -78,7 +78,6 @@ const renderTodos = (): void => { // void because no return - what we are doing 
 
             if (diffMs < 0) {
                 dueDateDisplay = `<span class="due-date overdue">Overdue by ${Math.abs(diffDays)} day(s)</span>`;
-                li.classList.add('overdue');
             } else {
                 dueDateDisplay = `<span class="due-date">Due in ${diffDays} day(s)</span>`;
             }

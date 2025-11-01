@@ -66,7 +66,7 @@ test('Form validation shows error for empty submit', async ({page}) => {
     await expect(input).toHaveClass(/input-error/);
 });
 
-test('Add a todo with a due date', async ({page}) => {
+test('Add a todo with a due date', async ({ page }) => {
     const input = page.locator('#todo-input');
     const dueDateInput = page.locator('#due-date');
     const todoList = page.locator('#todo-list');
@@ -76,15 +76,12 @@ test('Add a todo with a due date', async ({page}) => {
 
     await input.press('Enter');
 
-    const item = todoList.locator('.todo-item', {hasText: 'Todo with due date'});
+    const item = todoList.locator('.todo-item', { hasText: 'Todo with due date' });
     await expect(item).toBeVisible();
 
     const dueDateSpan = item.locator('.due-date');
     await expect(dueDateSpan).toBeVisible();
-
-    await expect(dueDateSpan).toHaveText(/12/);
-    await expect(dueDateSpan).toHaveText(/25/);
-    await expect(dueDateSpan).toHaveText(/2025/);
+    await expect(dueDateSpan).toHaveText(/Due in \d+ day\(s\)/);
 });
 
 test.describe('Overdue item styling', () => {
