@@ -1,24 +1,61 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + TS</title>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Todo App</h1>
-      <form class="todo-form">
-        <input type="text" id="todo-input" placeholder="Add a new todo" />
-        <button type="submit">Add</button>
-      </form>
-      <!-- error handling message : CSS added:: .input-error & #error-message -->
-      <p id="error-message">Please enter a todo item</p>
-      <ul class="todo-list" id="todo-list"></ul>
+<head>
+    <meta charset="UTF-8"/>
+    <link rel="icon" type="image/svg+xml" href="/vite.svg"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Todo App</title>
+</head>
+<body>
+<div class="container">
+    <h1>Todo App</h1>
 
-      <input type="color" id="colorPicker" />
+    <div class="progress-container">
+        <div class="progress-bar-wrapper">
+            <div class="progress-bar-fill" id="progress-bar"></div>
+        </div>
+        <span class="progress-text" id="progress-text">0 / 0 completed (0%)</span>
     </div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+
+
+    <form class="todo-form">
+        <div class="form-row">
+            <input type="text" id="todo-input" placeholder="Add a new todo" maxlength="200"/>
+        </div>
+        <div class="form-row form-options">
+            <input type="date" id="due-date" title="Due date (optional)"/>
+            <select id="priority" title="Priority level">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <button type="submit">Add</button>
+        </div>
+    </form>
+    <!-- error handling message : CSS added:: .input-error & #error-message -->
+    <p id="error-message">Please enter a todo item</p>
+
+    <div class="action-buttons">
+        <button id="sort-priority" class="secondary-btn">Sort by Priority</button>
+        <button id="export-json" class="secondary-btn">Export JSON</button>
+        <button id="import-json" class="secondary-btn">Import JSON</button>
+        <button id="clear-all" class="danger-btn">Clear All</button>
+    </div>
+
+    <div class="filter-buttons">
+        <button id="filter-all" class="filter-btn active">All</button>
+        <button id="filter-active" class="filter-btn">Active</button>
+        <button id="filter-completed" class="filter-btn">Completed</button>
+    </div>
+
+    <input type="file" id="import-file" accept="application/json" />
+
+    <ul class="todo-list" id="todo-list"></ul>
+
+    <input type="color" id="colorPicker"/>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
 </html>

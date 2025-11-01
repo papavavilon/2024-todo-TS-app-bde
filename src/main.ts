@@ -1,14 +1,6 @@
 /**
- * NOTE to self
- * Make a module and import the functions from the module
- * Seperate the functions into different files
- * Logical grouping of functions - for example, all functions related to adding a todo item can be in one file
- * 
- */
-
-
-/**
- * REDO it. More streqamlined and better structure - 
+ * Todo Application
+ * Features: Completion toggle, Due Dates, Priority, Progress Bar, Local Storage, JSON Import/Export
  */
 
 
@@ -17,107 +9,202 @@ import './style.css';
 
 // Step 2: Define the Todo interface
 // Define the Todo interface: This interface defines the structure of a todo item.
+
+/**
+ * Defines the possible priority levels for a Todo.
+ */
+export type priority = 'low' | 'medium' | 'high';
+
+/**
+ * Defines the possible filtering status.
+ */
+export type filterStatus = 'all' | 'active' | 'completed';
+
+/**
+ * Represents a single task in the todo list.
+ */
 export interface Todo {
-  id: number;
-  text: string;
-  completed: boolean;
+    /** A unique identifier for the todo, typically a timestamp. */
+    id: number;
+    /** The description or content of the task. */
+    text: string;
+    /** An optional due date for the task in ISO string format (e.g., "YYYY-MM-DD"). */
+    dueDate?: string;
+    /** Indicates whether the task has been completed. */
+    completed: boolean;
+    /** The priority level of the task. */
+    priority: priority;
 }
 
-// Step 3: Initialize an empty array to store todos
-// Initialize an empty array: This array will store the list of todos.
+/**
+ * The main array holding the state of all todo items.
+ */
 export let todos: Todo[] = [];
 
-// Step 4: Get references to the HTML elements
-// Get references to the HTML elements: These references will be used to interact with the DOM
+/**
+ * Current selected filter.
+ */
+export let currentFilter: filterStatus = 'all';
+
 const todoInput = document.getElementById('todo-input') as HTMLInputElement; // exist in HTML file
 const todoForm = document.querySelector('.todo-form') as HTMLFormElement;    // exist in HTML file
 const todoList = document.getElementById('todo-list') as HTMLUListElement;   // exist in HTML file
-
-
-
-
-
-
-// Step 5: Function to add a new todo
-// Function to add a new todo: This function creates a new todo object and adds it to the array.
-export const addTodo = (text: string): void => {
-  const newTodo: Todo = {
-    id: Date.now(), // Generate a unique ID based on the current timestamp
-    text: text,
-    completed: false,
-  };
-  todos.push(newTodo);
-  console.log("Todo added: ", todos); // Log the updated list of todos to the console
-  renderTodos(); // Render the updated list of todos => create the function next
-};
-
-// Step 6: Function to render the list of todos
-// Function to render the list of todos: This function updates the DOM to display the current list of todos.
-const renderTodos = (): void => { // void because no return - what we are doing is updating the DOM
-  // Clear the current list
-  todoList.innerHTML = '';
-
-  // Iterate over the todos array and create list items for each todo
-  todos.forEach(todo => { // In this specific case, .forEach is more suitable because we are directly modifying the DOM for each todo item.
-    const li = document.createElement('li');
-    li.className = 'todo-item'; // Add a class to the list item
-    // Use template literals to create the HTML content for each list item
-    li.innerHTML = `
-      <span>${todo.text}</span>
-      <button>Remove</button>
-         <button id="editBtn">Edit</button>
-    `;
-    // addRemoveButtonListener is further down in the code. We have onclick in the function instead of template literals. More safe to use addEventListener.
-    addRemoveButtonListener(li, todo.id); // Add event listener to the remove button. li is the parent element, and todo.id is the ID of the todo. 
-    addEditButtonListener(li, todo.id); // Add event listener to the remove button. li is the parent element, and todo.id is the ID of the todo. 
-    todoList.appendChild(li); // Append the list item to the ul element
-  });
-};
-
-// Step 6.1: Function to render the list of todos
-// Initial render
-renderTodos(); // Call the renderTodos function to display the initial list of todos : Should be at the end of the code to ensure that the function is defined before it is called.
-// The initial render is important to display the list of todos when the page is first loaded. Without it, the list would be empty until a new todo is added.
-// Move it when code is complete ( refactoring ) 
-
-
-// Step 7: Event listener for the form submission
-// Event listener for the form submission: This listener handles the form submission, adds the new todo, and clears the input field.
-todoForm.addEventListener('submit', (event: Event) => {
-  event.preventDefault(); // Prevent the default form submission behavior
-  const text = todoInput.value.trim(); // Get the value of the input field and remove any leading or trailing whitespace - not needed, but good practice
-  if (text !== '') { // Check if the input field is not empty. Sort of a reverse falsey
-    addTodo(text);
-    todoInput.value = ''; // Clear the input field
-  }
-});
-
-//Improved code for step 7 - user input validation - move the error message to the top of the Typescript file
 const errorMessage = document.getElementById('error-message') as HTMLParagraphElement; // Should be moved to the top + added to the HTML file
+const dueDateInput = document.getElementById('due-date') as HTMLInputElement;
+const prioritySelect = document.getElementById('priority') as HTMLSelectElement;
+const sortButton = document.getElementById('sort-priority') as HTMLButtonElement;
+const progressBar = document.getElementById('progress-bar') as HTMLDivElement;
+const progressText = document.getElementById('progress-text') as HTMLSpanElement;
+const clearAllButton = document.getElementById('clear-all') as HTMLButtonElement;
+const exportButton = document.getElementById('export-json') as HTMLButtonElement;
+const importButton = document.getElementById('import-json') as HTMLButtonElement;
+const importFileInput = document.getElementById('import-file') as HTMLInputElement;
+const filterAllBtn = document.getElementById('filter-all') as HTMLButtonElement;
+const filterActiveBtn = document.getElementById('filter-active') as HTMLButtonElement;
+const filterCompletedBtn = document.getElementById('filter-completed') as HTMLButtonElement;
 
-todoForm.addEventListener('submit', (event: Event) => {
-  event.preventDefault(); // Prevent the default form submission behavior
-  const text = todoInput.value.trim(); // Get the value of the input field and remove any leading or trailing whitespace
+/**
+ * The key used to store and retrieve todos from localStorage.
+ */
+const STORAGE_KEY = 'todos';
 
-  if (text !== '') { // Check if the input field is empty
-    todoInput.classList.remove('input-error'); // Remove the error highlight if present
-    errorMessage.style.display = 'none'; // Hide the error message
-    addTodo(text); // Add the todo item
-    todoInput.value = ''; // Clear the input field
-  } else {
-    console.log("Please enter a todo item"); // Provide feedback to the user
-    todoInput.classList.add('input-error'); // Add a class to highlight the error
-    errorMessage.style.display = 'block'; // Show the error message
-  }
-});
+/**
+ * Loads the todo list from localStorage into the `todos` array.
+ * Logs an error to the console and displays an error message if parsing fails.
+ */
+export const loadTodosFromStorage = (): void => {
+    try {
+        const storedTodos = localStorage.getItem(STORAGE_KEY);
+        if (storedTodos) {
+            todos = JSON.parse(storedTodos);
+            console.log('Todos loaded from storage:', todos);
+        }
+    } catch (error) {
+        console.error('Error loading todos from storage:', error);
+        errorMessage.textContent = 'Error loading saved todos';
+        errorMessage.style.display = 'block';
+    }
+};
+
+/**
+ * Saves the current `todos` array to localStorage.
+ * Logs an error to the console if saving fails.
+ */
+export const saveTodosToStorage = (): void => {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+        console.log('Todos saved to storage');
+    } catch (error) {
+        console.error('Error saving todos to storage:', error);
+    }
+};
 
 
+/**
+ * Creates and adds a new todo item to the `todos` array.
+ * @param {string} text - The main content of the todo.
+ * @param {string} [dueDate] - The optional due date for the todo.
+ * @param {priority} [priority='medium'] - The priority of the todo, defaults to 'medium'.
+ * @returns {Todo} The newly created todo object.
+ */
+export const addTodo = (text: string, dueDate?: string, priority: priority = 'medium'): Todo => {
+    const newTodo: Todo = {
+        id: Date.now(), // Generate a unique ID based on the current timestamp
+        text: text.trim(),
+        dueDate: dueDate || undefined,
+        completed: false,
+        priority: priority,
+    };
+    todos.push(newTodo);
+    console.log("Todo added: ", todos); // Log the updated list of todos to the console
+    renderTodos(); // Render the updated list of todos => create the function next
+    return newTodo;
+};
 
-// Step 8: Function to removes all a todo by ID
-// Function to add event listener to the remove button - this function has an callback function that removes the todo item from the array.
+/**
+ * Renders the entire list of todos to the DOM.
+ * It clears the existing list, iterates over the `todos` array,
+ * and creates an HTML list item for each todo.
+ * Also triggers `saveTodosToStorage` and `updateProgressBar`.
+ */
+export const renderTodos = (): void => { // void because no return - what we are doing is updating the DOM
+    saveTodosToStorage();
+    updateFilterButtons();
+
+    // Clear the current list
+    todoList.innerHTML = '';
+
+    const filteredTodos = todos.filter(todo => {
+        if (currentFilter === 'active') {
+            return !todo.completed;
+        }
+        if (currentFilter === 'completed') {
+            return todo.completed;
+        }
+        return true;
+    });
+
+    // Iterate over the todos array and create list items for each todo
+    filteredTodos.forEach(todo => { // In this specific case, .forEach is more suitable because we are directly modifying the DOM for each todo item.
+        const li = document.createElement('li');
+        li.className = 'todo-item'; // Add a class to the list item
+        // Use template literals to create the HTML content for each list item
+
+        if (isOverdue(todo.dueDate) && !todo.completed) {
+            li.classList.add('overdue');
+        }
+
+        if (todo.completed) {
+            li.classList.add('completed');
+        }
+
+        let dueDateDisplay = '';
+        if (todo.dueDate) {
+            const now = new Date();
+            const due = new Date(todo.dueDate);
+            const diffMs = due.getTime() - now.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffMs < 0) {
+                dueDateDisplay = `<span class="due-date overdue">Overdue by ${Math.abs(diffDays)} day(s)</span>`;
+            } else {
+                dueDateDisplay = `<span class="due-date">Due in ${diffDays} day(s)</span>`;
+            }
+        }
+
+        const priorityBadge = `<span class="priority-badge priority-${todo.priority}">${todo.priority}</span>`;
+
+        li.innerHTML = `
+            <div class="todo-content">
+                <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} />
+                <span class="todo-text">${todo.text}</span>
+                ${priorityBadge}
+                ${dueDateDisplay}
+                <div class="todo-actions">
+                    <button class="edit-btn">Edit</button>
+                    <button class="remove-btn">Remove</button>
+                </div>
+            </div>
+        `;
+        addCheckboxListener(li, todo.id);
+
+        // addRemoveButtonListener is further down in the code. We have onclick in the function instead of template literals. More safe to use addEventListener.
+        addRemoveButtonListener(li, todo.id); // Add event listener to the remove button. li is the parent element, and todo.id is the ID of the todo.
+        addEditButtonListener(li, todo.id); // Add event listener to the remove button. li is the parent element, and todo.id is the ID of the todo.
+        todoList.appendChild(li); // Append the list item to the ul element
+    });
+
+    updateProgressBar();
+};
+
+/**
+ * Attaches a click event listener to the remove button of a todo item.
+ * @param {HTMLLIElement} li - The list item element containing the button.
+ * @param {number} id - The ID of the todo to be removed.
+ */
 const addRemoveButtonListener = (li: HTMLLIElement, id: number): void => {
-  const removeButton = li.querySelector('button');
-  removeButton?.addEventListener('click', () => removeTodo(id)); // We have an optional chaining operator here to avoid errors if the button is not found - for example, if the button is removed from the DOM.
+    const removeButton = li.querySelector('.remove-btn');
+    removeButton?.addEventListener('click', () => removeTodo(id)); // We have an optional chaining operator here to avoid errors if the button is not found - for example, if the button is removed from the DOM.
 };
 /*
 example of explicit null checking - without optional chaining operator, but basically the same as above
@@ -132,141 +219,328 @@ const addRemoveButtonListener = (li: HTMLLIElement, id: number): void => {
 */
 
 
-// Step 8: Function to remove a todo by ID
-// Function to remove a todo by ID: This function removes a todo from the array based on its ID.
-export const removeTodo = (id: number): void => {
-  todos = todos.filter(todo => todo.id !== id);
-  renderTodos(); // Re-render the updated list of todos
-}; 
+/**
+ * Removes a todo item from the `todos` array by its ID.
+ * @param {number} id - The ID of the todo to remove.
+ * @returns {boolean} True if a todo was removed, false otherwise.
+ */
+export const removeTodo = (id: number): boolean => {
+    const initialLength = todos.length;
+    todos = todos.filter(todo => todo.id !== id);
+    if (todos.length < initialLength) {
+        renderTodos();  // Re-render the updated list of todos
+        return true;
+    }
+    return false;
+};
 
 
-// Edit event listener - make button and add button to each todo
-const addEditButtonListener = (li: HTMLLIElement, id:number) => {
-  // make use of the editBtn id to edit the todo
-  const editButton = li.querySelector('#editBtn')
-  editButton?.addEventListener('click', () => editTodo(id)) 
+/**
+ * Attaches a click event listener to the edit button of a todo item.
+ * @param {HTMLLIElement} li - The list item element containing the button.
+ * @param {number} id - The ID of the todo to be edited.
+ */
+const addEditButtonListener = (li: HTMLLIElement, id: number) => {
+    // make use of the editBtn id to edit the todo
+    const editButton = li.querySelector('.edit-btn');
+    editButton?.addEventListener('click', () => editTodo(id))
 }
 
-// Edit function - prompt user to edit the todo : editTodo
-const editTodo = (id:number) => {
-  const todo = todos.find(todo => todo.id === id)
-  if (todo) {
-    const text = prompt('Edit todo', todo.text)
-    if (text) {
-      todo.text = text
-      renderTodos()
+/**
+ * Prompts the user to edit the text of a specific todo item.
+ * Re-renders the list if the text is changed.
+ * @param {number} id - The ID of the todo to edit.
+ */
+const editTodo = (id: number) => {
+    const todo = todos.find(todo => todo.id === id)
+    if (todo) {
+        const text = prompt('Edit todo', todo.text)
+        if (text) {
+            todo.text = text
+            renderTodos()
+        }
     }
-  }
 }
 
 /**
  * color picker
  */
 
-// Function to change the background color of the page based on the color picker value
+/**
+ * Changes the background color of the document body.
+ * @param {string} color - The CSS color string.
+ */
 const changeBackgroundColor = (color: string): void => {
-  document.body.style.backgroundColor = color;
+    document.body.style.backgroundColor = color;
 };
 
-// Function to initialize the color picker event listener
+/**
+ * Initializes the color picker input and attaches an 'input' event listener
+ * to change the page background color.
+ */
 const initializeColorPicker = (): void => {
-  const colorPicker = document.getElementById('colorPicker') as HTMLInputElement; // encapsulate the color picker element to this function
-  if (colorPicker) {
-    colorPicker.addEventListener('input', (event: Event) => {
-      const target = event.target as HTMLInputElement;
-      changeBackgroundColor(target.value);
-    });
-  } else {
-    console.error('Color picker element not found');
-  }
+    const colorPicker = document.getElementById('colorPicker') as HTMLInputElement; // encapsulate the color picker element to this function
+    if (colorPicker) {
+        colorPicker.addEventListener('input', (event: Event) => {
+            const target = event.target as HTMLInputElement;
+            changeBackgroundColor(target.value);
+        });
+    } else {
+        console.error('Color picker element not found');
+    }
 };
 
-// Call the initializeColorPicker function when the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', () => {
-  initializeColorPicker();
-});
+/**
+ * Toggles the 'completed' status of a todo item by its ID.
+ * @param {number} id - The ID of the todo to toggle.
+ * @returns {boolean} True if the todo was found and toggled, false otherwise.
+ */
+export const toggleTodoCompletion = (id: number): boolean => {
+    const todo = todos.find(t => t.id === id);
+    if (todo) {
+        todo.completed = !todo.completed;
+        console.log(`Todo ${id} completion toggled to:`, todo.completed);
+        renderTodos();
+        return true;
+    }
+    return false;
+};
 
-/** 
- * Kristian: 6th of September 2024, BDE
- * 
- * This is the list of optional features that can be added to the todo list application:
- * You must make at least one of these features to complete the project. The more the merrier.
- * In your submission video, please mention which feature you have implemented and demonstrate how it works. Go through the code and explain how you implemented the feature and how it works.
- * IF, you want to implement something not on list, you can do that as well.
-*/
+/**
+ * Attaches a 'change' event listener to the checkbox of a todo item.
+ * @param {HTMLLIElement} li - The list item element containing the checkbox.
+ * @param {number} id - The ID of the todo to toggle.
+ */
+const addCheckboxListener = (li: HTMLLIElement, id: number): void => {
+    const checkbox = li.querySelector('.todo-checkbox') as HTMLInputElement;
+    checkbox?.addEventListener('change', () => toggleTodoCompletion(id));
+};
+
+/**
+ * Checks if a todo item is overdue.
+ * @param {string} [dueDate] - The due date string of the todo.
+ * @returns {boolean} True if the due date is in the past, false otherwise or if no date is provided.
+ */
+export const isOverdue = (dueDate?: string): boolean => {
+    if (!dueDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    return due < today;
+};
+
+/**
+ * Sorts the global `todos` array by priority (high > medium > low).
+ * Re-renders the todo list afterward.
+ */
+export const sortTodosByPriority = (): void => {
+    const priorityOrder = {high: 1, medium: 2, low: 3};
+    todos.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    renderTodos();
+    console.log('Todos sorted by priority');
+};
+
+/**
+ * Updates the progress bar and text based on the number of completed todos.
+ */
+export const updateProgressBar = (): void => {
+    if (!progressBar || !progressText) return;
+
+    const total = todos.length;
+    const completed = todos.filter(t => t.completed).length;
+    const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    progressBar.style.width = `${percentage}%`;
+    progressText.textContent = `${completed} / ${total} completed (${percentage}%)`;
+};
+
+/**
+ * Updates the visual state of the filter buttons to match the current filter.
+ */
+export const updateFilterButtons = (): void => {
+    if (filterAllBtn) filterAllBtn.classList.toggle('active', currentFilter === 'all');
+    if (filterActiveBtn) filterActiveBtn.classList.toggle('active', currentFilter === 'active');
+    if (filterCompletedBtn) filterCompletedBtn.classList.toggle('active', currentFilter === 'completed');
+};
+
+/**
+ * Sets the current filter status and re-renders the todo list.
+ * @param {filterStatus} filter - The filter to apply ('all', 'active', 'completed').
+ */
+export const setFilter = (filter: filterStatus): void => {
+    currentFilter = filter;
+    renderTodos();
+};
+
+/**
+ * Clears all todos from the `todos` array after a confirmation prompt.
+ * Re-renders the list.
+ */
+export const clearAllTodos = (): void => {
+    if (todos.length === 0) {
+        alert('No todos to clear');
+        return;
+    }
+
+    if (confirm('Are you sure you want to clear all todos? This cannot be undone.')) {
+        todos = [];
+        renderTodos();
+        console.log('All todos cleared');
+    }
+};
+
+/**
+ * Exports the current `todos` array as a JSON file.
+ * Prompts an alert if there are no todos to export.
+ */
+export const exportTodos = (): void => {
+    if (todos.length === 0) {
+        alert('No todos to export.');
+        return;
+    }
+    try {
+        const dataStr = JSON.stringify(todos, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'todos.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error exporting todos:', error);
+        alert('Failed to export todos.');
+    }
+};
+
+/**
+ * Imports todos from a selected JSON file.
+ * Validates the file format and replaces the current `todos` array after confirmation.
+ * @param {Event} event - The 'change' event from the file input element.
+ */
+export const importTodos = (event: Event): void => {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) {
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const text = e.target?.result as string;
+            const importedTodos = JSON.parse(text);
+
+            if (Array.isArray(importedTodos)) {
+                const isValid = importedTodos.every(item =>
+                    typeof item === 'object' &&
+                    item !== null &&
+                    'id' in item &&
+                    'text' in item &&
+                    'completed' in item &&
+                    'priority' in item
+                );
+
+                if (isValid) {
+                    if (confirm('This will replace your current todo list. Are you sure?')) {
+                        todos = importedTodos;
+                        renderTodos();
+                    }
+                } else {
+                    alert('Invalid todo file format.');
+                }
+            } else {
+                alert('Invalid file content. Expected a JSON array.');
+            }
+        } catch (error) {
+            console.error('Error importing todos:', error);
+            alert('Failed to read or parse the file.');
+        } finally {
+            importFileInput.value = '';
+        }
+    };
+    reader.onerror = () => {
+        alert('Error reading file.');
+        importFileInput.value = '';
+    };
+    reader.readAsText(file);
+};
 
 
-//Optional features list: 
+/**
+ * Main function to initialize the application.
+ * Loads todos from storage, renders them, and sets up all event listeners.
+ */
+const initializeApp = (): void => {
+    loadTodosFromStorage();
+    renderTodos();
+    initializeColorPicker();
 
-// Option 1: Add a button to toggle the completed status of a todo item
-// Function to toggle the completed status of a todo + 
-// Add a button to toggle the completed status of a todo item
+    if (sortButton) {
+        sortButton.addEventListener('click', sortTodosByPriority);
+    }
 
-// Option 2: Add a button to clear all completed todos
-// Add a button to clear all completed todos
-// Function to clear all completed todos
-// Add a button to toggle all todos
+    if (clearAllButton) {
+        clearAllButton.addEventListener('click', clearAllTodos);
+    }
 
-// Option 3: Add a button to toggle all todos
-// Edit a todo item and update it
-// Add an input field to edit a todo item
-// Save the updated todo item
-// Cancel the editing of a todo item
-// Add a button to cancel the editing of a todo item
+    if (exportButton) {
+        exportButton.addEventListener('click', exportTodos);
+    }
 
-// Option 4: Add a button to filter todos by status
-// Add a button to filter todos by status
-// Function to filter todos by status
+    if (importButton) {
+        importButton.addEventListener('click', () => importFileInput.click());
+    }
 
-// Option 5: Add a button to sort todos by status
-// Add a button to sort todos by status
-// Function to sort todos by status
+    if (importFileInput) {
+        importFileInput.addEventListener('change', importTodos);
+    }
 
-// Option 6: Due Date for Todos:
-// Add a date input field to set a due date for each todo item.
-// Display the due date next to each todo item.
-// Highlight overdue todos.
-// Priority Levels:
+    if (filterAllBtn) {
+        filterAllBtn.addEventListener('click', () => setFilter('all'));
+    }
 
-// Option 7: Add a dropdown to set the priority level (e.g., Low, Medium, High) for each todo item.
-// Display the priority level next to each todo item.
-// Sort todos by priority.
-// Search Functionality:
+    if (filterActiveBtn) {
+        filterActiveBtn.addEventListener('click', () => setFilter('active'));
+    }
 
-// Option 8: Add a search input field to filter todos based on the search query.
-// Display only the todos that match the search query.
-// Category Tags:
+    if (filterCompletedBtn) {
+        filterCompletedBtn.addEventListener('click', () => setFilter('completed'));
+    }
 
-// Option 9: Add a text input field to assign category tags to each todo item.
-// Display the tags next to each todo item.
-// Filter todos by category tags.
-// Progress Indicator:
+    // Step 7: Event listener for the form submission
+    // Event listener for the form submission: This listener handles the form submission, adds the new todo, and clears the input field.
+    if (todoForm) {
+        todoForm.addEventListener('submit', (event: Event) => {
+            event.preventDefault(); // Prevent the default form submission behavior
+            const text = todoInput.value.trim(); // Get the value of the input field and remove any leading or trailing whitespace
+            const dueDate = dueDateInput.value;
+            const priority = prioritySelect.value as priority;
 
-// Option 10: Add a progress bar to show the percentage of completed todos.
-// Update the progress bar as todos are marked as completed or incomplete.
-// Dark Mode Toggle:
+            if (text === '') {
+                console.log("Please enter a todo item"); // Provide feedback to the user
+                todoInput.classList.add('input-error'); // Add a class to highlight the error
+                errorMessage.style.display = 'block'; // Show the error message
+                return;
+            }
 
-// Option 11: Add a button to toggle between light and dark modes.
-// Change the app's theme based on the selected mode.
-// Export/Import Todos:
+            todoInput.classList.remove('input-error'); // Remove the error highlight if present
+            errorMessage.style.display = 'none'; // Hide the error message
 
-// Option 12: Add buttons to export the list of todos to a JSON file.
-// Add functionality to import todos from a JSON file.
-// Notifications:
+            addTodo(text, dueDate, priority); // Add the todo item
 
-// Option 13: Add notifications to remind users of due todos.
-// Use the Notification API to show browser notifications.
+            todoInput.value = ''; // Clear the input field
+            dueDateInput.value = '';
+        });
+    }
 
-// Option 14: Local Storage:
-// Save the list of todos to local storage.
-// Retrieve the todos from local storage on page load.
-// Add a button to clear all todos from local storage.
+    console.log('Todo app initialized');
+};
 
-// Option 15: JSDOC Comments:
-// Add JSDoc comments to document the functions and interfaces in the code.
-// Link : https://jsdoc.app/
 
-// Optional 16: Handle Errors:
-// Add error handling for user input validation. Show red text or border for invalid input.
-// Display error messages for invalid input.
-
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
