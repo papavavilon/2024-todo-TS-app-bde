@@ -46,6 +46,12 @@ beforeEach(async () => {
         <button id="export-json"></button>
         <button id="import-json"></button>
     </div>
+
+    <div class="filter-buttons">
+        <button id="filter-all" class="filter-btn"></button>
+        <button id="filter-active" class="filter-btn"></button>
+        <button id="filter-completed" class="filter-btn"></button>
+    </div>
     <input type="file" id="import-file" accept="application/json" style="display:none" />
     <ul id="todo-list"></ul>
     <input id="colorPicker" />
@@ -399,5 +405,81 @@ describe('Import/Export', () => {
         const {importTodos} = mod;
         const event = {target: {files: []}} as unknown as Event;
         expect(() => importTodos(event)).not.toThrow();
+    });
+});
+
+describe('Filtering functions', () => {
+    let filterAllBtn: HTMLButtonElement;
+    let filterActiveBtn: HTMLButtonElement;
+    let filterCompletedBtn: HTMLButtonElement;
+    let todoList: HTMLUListElement;
+
+    beforeEach(() => {
+        filterAllBtn = document.getElementById('filter-all') as HTMLButtonElement;
+        filterActiveBtn = document.getElementById('filter-active') as HTMLButtonElement;
+        filterCompletedBtn = document.getElementById('filter-completed') as HTMLButtonElement;
+        todoList = document.getElementById('todo-list') as HTMLUListElement;
+
+        vi.spyOn(mod, 'renderTodos').mockImplementation(() => {});
+
+        mod.setFilter('all');
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('updateFilterButtons() correctly toggles "active" class', () => {
+        mod.setFilter('all');
+        mod.updateFilterButtons();
+        expect(filterAllBtn.classList.contains('active')).toBe(true);
+        expect(filterActiveBtn.classList.contains('active')).toBe(false);
+        expect(filterCompletedBtn.classList.contains('active')).toBe(false);
+
+        mod.setFilter('active');
+        mod.updateFilterButtons();
+        expect(filterAllBtn.classList.contains('active')).toBe(false);
+        expect(filterActiveBtn.classList.contains('active')).toBe(true);
+        expect(filterCompletedBtn.classList.contains('active')).toBe(false);
+
+        mod.setFilter('completed');
+        mod.updateFilterButtons();
+        expect(filterAllBtn.classList.contains('active')).toBe(false);
+        expect(filterActiveBtn.classList.contains('active')).toBe(false);
+        expect(filterCompletedBtn.classList.contains('active')).toBe(true);
+    });
+
+    describe('renderTodos filtering logic', () => {
+        beforeEach(() => {
+            vi.restoreAllMocks();
+
+            vi.spyOn(localStorageMock, 'setItem');
+
+            mod.todos.length = 0;
+            mod.addTodo('Active Item');
+            const completedTodo = mod.addTodo('Completed Item');
+            mod.toggleTodoCompletion(completedTodo.id);
+        });
+
+        it('renders all todos when filter is "all"', () => {
+            mod.setFilter('all');
+
+            const items = todoList.querySelectorAll('.todo-item');
+            expect(items.length).toBe(2);
+        });
+
+        it('renders only active todos when filter is "active"', () => {
+            mod.setFilter('active');
+
+            const items = todoList.querySelectorAll('.todo-item');
+            expect(items.length).toBe(1);
+        });
+
+        it('renders only completed todos when filter is "completed"', () => {
+            mod.setFilter('completed');
+
+            const items = todoList.querySelectorAll('.todo-item');
+            expect(items.length).toBe(1);
+        });
     });
 });
