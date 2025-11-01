@@ -1,6 +1,6 @@
 /**
  * Todo Application
- * Features: Completion toggle
+ * Features: Completion toggle, Due Dates
  */
 
 
@@ -17,6 +17,7 @@ import './style.css';
 export interface Todo {
     id: number;
     text: string;
+    dueDate?: string;
     completed: boolean;
 }
 
@@ -30,14 +31,16 @@ const todoInput = document.getElementById('todo-input') as HTMLInputElement; // 
 const todoForm = document.querySelector('.todo-form') as HTMLFormElement;    // exist in HTML file
 const todoList = document.getElementById('todo-list') as HTMLUListElement;   // exist in HTML file
 const errorMessage = document.getElementById('error-message') as HTMLParagraphElement; // Should be moved to the top + added to the HTML file
+const dueDateInput = document.getElementById('due-date') as HTMLInputElement;
 
 
 // Step 5: Function to add a new todo
 // Function to add a new todo: This function creates a new todo object and adds it to the array.
-export const addTodo = (text: string): Todo => {
+export const addTodo = (text: string, dueDate?: string): Todo => {
     const newTodo: Todo = {
         id: Date.now(), // Generate a unique ID based on the current timestamp
-        text: text,
+        text: text.trim(),
+        dueDate: dueDate || undefined,
         completed: false,
     };
     todos.push(newTodo);
@@ -58,20 +61,39 @@ const renderTodos = (): void => { // void because no return - what we are doing 
         li.className = 'todo-item'; // Add a class to the list item
         // Use template literals to create the HTML content for each list item
 
+        if (isOverdue(todo.dueDate) && !todo.completed) {
+            li.classList.add('overdue');
+        }
+
         if (todo.completed) {
             li.classList.add('completed');
         }
 
+        let dueDateDisplay = '';
+        if (todo.dueDate) {
+            const now = new Date();
+            const due = new Date(todo.dueDate);
+            const diffMs = due.getTime() - now.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffMs < 0) {
+                dueDateDisplay = `<span class="due-date overdue">Overdue by ${Math.abs(diffDays)} day(s)</span>`;
+            } else {
+                dueDateDisplay = `<span class="due-date">Due in ${diffDays} day(s)</span>`;
+            }
+        }
+
         li.innerHTML = `
-    <div class="todo-content">
-      <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} />
-      <span class="todo-text">${todo.text}</span>
-      <div class="todo-actions">
-        <button class="edit-btn">Edit</button>
-        <button class="remove-btn">Remove</button>
-      </div>
-    </div>
-    `;
+            <div class="todo-content">
+                <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} />
+                <span class="todo-text">${todo.text}</span>
+                ${dueDateDisplay}
+                <div class="todo-actions">
+                    <button class="edit-btn">Edit</button>
+                    <button class="remove-btn">Remove</button>
+                </div>
+            </div>
+        `;
         addCheckboxListener(li, todo.id);
 
         // addRemoveButtonListener is further down in the code. We have onclick in the function instead of template literals. More safe to use addEventListener.
@@ -83,21 +105,28 @@ const renderTodos = (): void => { // void because no return - what we are doing 
 
 // Step 7: Event listener for the form submission
 // Event listener for the form submission: This listener handles the form submission, adds the new todo, and clears the input field.
-todoForm.addEventListener('submit', (event: Event) => {
-    event.preventDefault(); // Prevent the default form submission behavior
-    const text = todoInput.value.trim(); // Get the value of the input field and remove any leading or trailing whitespace
+if (todoForm) {
+    todoForm.addEventListener('submit', (event: Event) => {
+        event.preventDefault(); // Prevent the default form submission behavior
+        const text = todoInput.value.trim(); // Get the value of the input field and remove any leading or trailing whitespace
+        const dueDate = dueDateInput.value;
 
-    if (text !== '') { // Check if the input field is empty
+        if (text === '') {
+            console.log("Please enter a todo item"); // Provide feedback to the user
+            todoInput.classList.add('input-error'); // Add a class to highlight the error
+            errorMessage.style.display = 'block'; // Show the error message
+            return;
+        }
+
         todoInput.classList.remove('input-error'); // Remove the error highlight if present
         errorMessage.style.display = 'none'; // Hide the error message
-        addTodo(text); // Add the todo item
+
+        addTodo(text, dueDate); // Add the todo item
+
         todoInput.value = ''; // Clear the input field
-    } else {
-        console.log("Please enter a todo item"); // Provide feedback to the user
-        todoInput.classList.add('input-error'); // Add a class to highlight the error
-        errorMessage.style.display = 'block'; // Show the error message
-    }
-});
+        dueDateInput.value = '';
+    });
+}
 
 
 // Step 8: Function to removes all a todo by ID
@@ -188,6 +217,14 @@ export const toggleTodoCompletion = (id: number): boolean => {
 const addCheckboxListener = (li: HTMLLIElement, id: number): void => {
     const checkbox = li.querySelector('.todo-checkbox') as HTMLInputElement;
     checkbox?.addEventListener('change', () => toggleTodoCompletion(id));
+};
+
+export const isOverdue = (dueDate?: string): boolean => {
+    if (!dueDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    return due < today;
 };
 
 const initializeApp = (): void => {
