@@ -10,22 +10,32 @@ import './style.css';
 // Step 2: Define the Todo interface
 // Define the Todo interface: This interface defines the structure of a todo item.
 
+/**
+ * Defines the possible priority levels for a Todo.
+ */
 export type priority = 'low' | 'medium' | 'high';
 
+/**
+ * Represents a single task in the todo list.
+ */
 export interface Todo {
+    /** A unique identifier for the todo, typically a timestamp. */
     id: number;
+    /** The description or content of the task. */
     text: string;
+    /** An optional due date for the task in ISO string format (e.g., "YYYY-MM-DD"). */
     dueDate?: string;
+    /** Indicates whether the task has been completed. */
     completed: boolean;
+    /** The priority level of the task. */
     priority: priority;
 }
 
-// Step 3: Initialize an empty array to store todos
-// Initialize an empty array: This array will store the list of todos.
+/**
+ * The main array holding the state of all todo items.
+ */
 export let todos: Todo[] = [];
 
-// Step 4: Get references to the HTML elements
-// Get references to the HTML elements: These references will be used to interact with the DOM
 const todoInput = document.getElementById('todo-input') as HTMLInputElement; // exist in HTML file
 const todoForm = document.querySelector('.todo-form') as HTMLFormElement;    // exist in HTML file
 const todoList = document.getElementById('todo-list') as HTMLUListElement;   // exist in HTML file
@@ -40,8 +50,15 @@ const exportButton = document.getElementById('export-json') as HTMLButtonElement
 const importButton = document.getElementById('import-json') as HTMLButtonElement;
 const importFileInput = document.getElementById('import-file') as HTMLInputElement;
 
+/**
+ * The key used to store and retrieve todos from localStorage.
+ */
 const STORAGE_KEY = 'todos';
 
+/**
+ * Loads the todo list from localStorage into the `todos` array.
+ * Logs an error to the console and displays an error message if parsing fails.
+ */
 export const loadTodosFromStorage = (): void => {
     try {
         const storedTodos = localStorage.getItem(STORAGE_KEY);
@@ -56,7 +73,10 @@ export const loadTodosFromStorage = (): void => {
     }
 };
 
-
+/**
+ * Saves the current `todos` array to localStorage.
+ * Logs an error to the console if saving fails.
+ */
 export const saveTodosToStorage = (): void => {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
@@ -67,8 +87,13 @@ export const saveTodosToStorage = (): void => {
 };
 
 
-// Step 5: Function to add a new todo
-// Function to add a new todo: This function creates a new todo object and adds it to the array.
+/**
+ * Creates and adds a new todo item to the `todos` array.
+ * @param {string} text - The main content of the todo.
+ * @param {string} [dueDate] - The optional due date for the todo.
+ * @param {priority} [priority='medium'] - The priority of the todo, defaults to 'medium'.
+ * @returns {Todo} The newly created todo object.
+ */
 export const addTodo = (text: string, dueDate?: string, priority: priority = 'medium'): Todo => {
     const newTodo: Todo = {
         id: Date.now(), // Generate a unique ID based on the current timestamp
@@ -83,8 +108,12 @@ export const addTodo = (text: string, dueDate?: string, priority: priority = 'me
     return newTodo;
 };
 
-// Step 6: Function to render the list of todos
-// Function to render the list of todos: This function updates the DOM to display the current list of todos.
+/**
+ * Renders the entire list of todos to the DOM.
+ * It clears the existing list, iterates over the `todos` array,
+ * and creates an HTML list item for each todo.
+ * Also triggers `saveTodosToStorage` and `updateProgressBar`.
+ */
 export const renderTodos = (): void => { // void because no return - what we are doing is updating the DOM
     saveTodosToStorage();
 
@@ -144,8 +173,11 @@ export const renderTodos = (): void => { // void because no return - what we are
     updateProgressBar();
 };
 
-// Step 8: Function to removes all a todo by ID
-// Function to add event listener to the remove button - this function has an callback function that removes the todo item from the array.
+/**
+ * Attaches a click event listener to the remove button of a todo item.
+ * @param {HTMLLIElement} li - The list item element containing the button.
+ * @param {number} id - The ID of the todo to be removed.
+ */
 const addRemoveButtonListener = (li: HTMLLIElement, id: number): void => {
     const removeButton = li.querySelector('.remove-btn');
     removeButton?.addEventListener('click', () => removeTodo(id)); // We have an optional chaining operator here to avoid errors if the button is not found - for example, if the button is removed from the DOM.
@@ -163,8 +195,11 @@ const addRemoveButtonListener = (li: HTMLLIElement, id: number): void => {
 */
 
 
-// Step 8: Function to remove a todo by ID
-// Function to remove a todo by ID: This function removes a todo from the array based on its ID.
+/**
+ * Removes a todo item from the `todos` array by its ID.
+ * @param {number} id - The ID of the todo to remove.
+ * @returns {boolean} True if a todo was removed, false otherwise.
+ */
 export const removeTodo = (id: number): boolean => {
     const initialLength = todos.length;
     todos = todos.filter(todo => todo.id !== id);
@@ -176,14 +211,22 @@ export const removeTodo = (id: number): boolean => {
 };
 
 
-// Edit event listener - make button and add button to each todo
+/**
+ * Attaches a click event listener to the edit button of a todo item.
+ * @param {HTMLLIElement} li - The list item element containing the button.
+ * @param {number} id - The ID of the todo to be edited.
+ */
 const addEditButtonListener = (li: HTMLLIElement, id: number) => {
     // make use of the editBtn id to edit the todo
     const editButton = li.querySelector('.edit-btn');
     editButton?.addEventListener('click', () => editTodo(id))
 }
 
-// Edit function - prompt user to edit the todo : editTodo
+/**
+ * Prompts the user to edit the text of a specific todo item.
+ * Re-renders the list if the text is changed.
+ * @param {number} id - The ID of the todo to edit.
+ */
 const editTodo = (id: number) => {
     const todo = todos.find(todo => todo.id === id)
     if (todo) {
@@ -199,12 +242,18 @@ const editTodo = (id: number) => {
  * color picker
  */
 
-// Function to change the background color of the page based on the color picker value
+/**
+ * Changes the background color of the document body.
+ * @param {string} color - The CSS color string.
+ */
 const changeBackgroundColor = (color: string): void => {
     document.body.style.backgroundColor = color;
 };
 
-// Function to initialize the color picker event listener
+/**
+ * Initializes the color picker input and attaches an 'input' event listener
+ * to change the page background color.
+ */
 const initializeColorPicker = (): void => {
     const colorPicker = document.getElementById('colorPicker') as HTMLInputElement; // encapsulate the color picker element to this function
     if (colorPicker) {
@@ -217,6 +266,11 @@ const initializeColorPicker = (): void => {
     }
 };
 
+/**
+ * Toggles the 'completed' status of a todo item by its ID.
+ * @param {number} id - The ID of the todo to toggle.
+ * @returns {boolean} True if the todo was found and toggled, false otherwise.
+ */
 export const toggleTodoCompletion = (id: number): boolean => {
     const todo = todos.find(t => t.id === id);
     if (todo) {
@@ -228,12 +282,21 @@ export const toggleTodoCompletion = (id: number): boolean => {
     return false;
 };
 
-
+/**
+ * Attaches a 'change' event listener to the checkbox of a todo item.
+ * @param {HTMLLIElement} li - The list item element containing the checkbox.
+ * @param {number} id - The ID of the todo to toggle.
+ */
 const addCheckboxListener = (li: HTMLLIElement, id: number): void => {
     const checkbox = li.querySelector('.todo-checkbox') as HTMLInputElement;
     checkbox?.addEventListener('change', () => toggleTodoCompletion(id));
 };
 
+/**
+ * Checks if a todo item is overdue.
+ * @param {string} [dueDate] - The due date string of the todo.
+ * @returns {boolean} True if the due date is in the past, false otherwise or if no date is provided.
+ */
 export const isOverdue = (dueDate?: string): boolean => {
     if (!dueDate) return false;
     const today = new Date();
@@ -242,6 +305,10 @@ export const isOverdue = (dueDate?: string): boolean => {
     return due < today;
 };
 
+/**
+ * Sorts the global `todos` array by priority (high > medium > low).
+ * Re-renders the todo list afterward.
+ */
 export const sortTodosByPriority = (): void => {
     const priorityOrder = {high: 1, medium: 2, low: 3};
     todos.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
@@ -249,6 +316,9 @@ export const sortTodosByPriority = (): void => {
     console.log('Todos sorted by priority');
 };
 
+/**
+ * Updates the progress bar and text based on the number of completed todos.
+ */
 export const updateProgressBar = (): void => {
     if (!progressBar || !progressText) return;
 
@@ -260,7 +330,10 @@ export const updateProgressBar = (): void => {
     progressText.textContent = `${completed} / ${total} completed (${percentage}%)`;
 };
 
-
+/**
+ * Clears all todos from the `todos` array after a confirmation prompt.
+ * Re-renders the list.
+ */
 export const clearAllTodos = (): void => {
     if (todos.length === 0) {
         alert('No todos to clear');
@@ -274,6 +347,10 @@ export const clearAllTodos = (): void => {
     }
 };
 
+/**
+ * Exports the current `todos` array as a JSON file.
+ * Prompts an alert if there are no todos to export.
+ */
 export const exportTodos = (): void => {
     if (todos.length === 0) {
         alert('No todos to export.');
@@ -296,6 +373,11 @@ export const exportTodos = (): void => {
     }
 };
 
+/**
+ * Imports todos from a selected JSON file.
+ * Validates the file format and replaces the current `todos` array after confirmation.
+ * @param {Event} event - The 'change' event from the file input element.
+ */
 export const importTodos = (event: Event): void => {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) {
@@ -309,7 +391,6 @@ export const importTodos = (event: Event): void => {
             const importedTodos = JSON.parse(text);
 
             if (Array.isArray(importedTodos)) {
-
                 const isValid = importedTodos.every(item =>
                     typeof item === 'object' &&
                     item !== null &&
@@ -334,7 +415,6 @@ export const importTodos = (event: Event): void => {
             console.error('Error importing todos:', error);
             alert('Failed to read or parse the file.');
         } finally {
-
             importFileInput.value = '';
         }
     };
@@ -346,7 +426,10 @@ export const importTodos = (event: Event): void => {
 };
 
 
-
+/**
+ * Main function to initialize the application.
+ * Loads todos from storage, renders them, and sets up all event listeners.
+ */
 const initializeApp = (): void => {
     loadTodosFromStorage();
     renderTodos();
