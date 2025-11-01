@@ -197,7 +197,7 @@ h1 {
     margin-bottom: 15px;
 }
 
-.secondary-btn {
+.secondary-btn, .danger-btn {
     flex: 1;
     padding: 10px;
     border: none;
@@ -215,6 +215,15 @@ h1 {
 
 .secondary-btn:hover {
     background: #5a6268;
+}
+
+.danger-btn {
+    background: var(--danger-color);
+    color: white;
+}
+
+.danger-btn:hover {
+    background: #c82333;
 }
 
 .priority-badge {

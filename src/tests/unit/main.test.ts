@@ -4,6 +4,26 @@ const MODULE_PATH = '../../main';
 
 let mod: any;
 
+const localStorageMock = (() => {
+    let store: { [key: string]: string } = {};
+    return {
+        getItem: vi.fn((key: string) => store[key] || null),
+        setItem: vi.fn((key: string, value: string) => {
+            store[key] = value.toString();
+        }),
+        clear: vi.fn(() => {
+            store = {};
+        }),
+        removeItem: vi.fn((key: string) => {
+            delete store[key];
+        }),
+    };
+})();
+
+Object.defineProperty(window, 'localStorage', {
+    value: localStorageMock,
+});
+
 beforeEach(async () => {
     document.body.innerHTML = `
     <div class="progress-container">
@@ -22,16 +42,24 @@ beforeEach(async () => {
     </form>
     <div class="action-buttons">
         <button id="sort-priority"></button>
+        <button id="clear-all"></button>
     </div>
     <ul id="todo-list"></ul>
     <input id="colorPicker" />
   `;
 
     vi.resetModules();
+    vi.clearAllMocks();
 
     vi.spyOn(Date, 'now').mockReturnValue(1600000000000);
 
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.spyOn(window, 'alert').mockImplementation(() => {
+    });
+
     mod = await import(MODULE_PATH);
+
+    mod.todos.length = 0;
 });
 
 afterEach(() => {
@@ -199,7 +227,6 @@ describe('sortTodosByPriority', () => {
     });
 });
 
-// New test suite for the progress bar
 describe('updateProgressBar', () => {
     let progressBar: HTMLDivElement;
     let progressText: HTMLSpanElement;
@@ -207,7 +234,7 @@ describe('updateProgressBar', () => {
     beforeEach(() => {
         progressBar = document.getElementById('progress-bar') as HTMLDivElement;
         progressText = document.getElementById('progress-text') as HTMLSpanElement;
-        mod.todos.length = 0; // Clear todos array
+        mod.todos.length = 0;
     });
 
     it('shows 0% for an empty list (0 / 0)', () => {
@@ -249,7 +276,97 @@ describe('updateProgressBar', () => {
         mod.todos.push({id: 3, text: 'c', completed: false});
 
         mod.updateProgressBar();
-        expect(progressBar.style.width).toBe('33%'); // Math.round(33.3...)
+        expect(progressBar.style.width).toBe('33%');
         expect(progressText.textContent).toBe('1 / 3 completed (33%)');
+    });
+});
+
+describe('clearAllTodos', () => {
+    it('should clear all todos, call render, and save to storage if confirmed', () => {
+        const {addTodo, clearAllTodos} = mod;
+        addTodo('Test todo');
+
+        expect(mod.todos.length).toBe(1);
+
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        const setItemSpy = vi.spyOn(localStorageMock, 'setItem');
+
+        clearAllTodos();
+
+        expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to clear all todos? This cannot be undone.');
+
+        expect(mod.todos.length).toBe(0);
+
+        expect(setItemSpy).toHaveBeenCalledWith('todos', '[]');
+    });
+
+    it('should not clear todos or call renderTodos if not confirmed', () => {
+        const {addTodo, clearAllTodos} = mod;
+        addTodo('Test todo');
+        expect(mod.todos.length).toBe(1);
+
+        vi.spyOn(window, 'confirm').mockReturnValue(false);
+        const setItemSpy = vi.spyOn(localStorageMock, 'setItem');
+        const alertSpy = vi.spyOn(window, 'alert');
+
+        clearAllTodos();
+
+        expect(window.confirm).toHaveBeenCalled();
+        expect(mod.todos.length).toBe(1);
+        expect(setItemSpy).not.toHaveBeenCalled();
+        expect(alertSpy).not.toHaveBeenCalled();
+    });
+
+    it('should show alert and not confirm if no todos exist', () => {
+        const {clearAllTodos} = mod;
+        expect(mod.todos.length).toBe(0);
+
+        const confirmSpy = vi.spyOn(window, 'confirm');
+        const alertSpy = vi.spyOn(window, 'alert');
+        const setItemSpy = vi.spyOn(localStorageMock, 'setItem');
+
+        clearAllTodos();
+
+        expect(alertSpy).toHaveBeenCalledWith('No todos to clear');
+        expect(confirmSpy).not.toHaveBeenCalled();
+        expect(setItemSpy).not.toHaveBeenCalled();
+    });
+});
+
+describe('LocalStorage functions', () => {
+    it('saveTodosToStorage() should stringify and save todos to localStorage', () => {
+        const {addTodo, saveTodosToStorage, todos} = mod;
+        addTodo('Save me');
+
+        saveTodosToStorage();
+
+        const expectedJSON = JSON.stringify(todos);
+        expect(localStorageMock.setItem).toHaveBeenCalledWith('todos', expectedJSON);
+    });
+
+    it('loadTodosFromStorage() should load and parse todos from localStorage', () => {
+        const sampleTodos = [{id: 1, text: 'Loaded todo', completed: false, priority: 'medium'}];
+        localStorageMock.getItem.mockReturnValue(JSON.stringify(sampleTodos));
+
+        mod.loadTodosFromStorage();
+
+        expect(localStorageMock.getItem).toHaveBeenCalledWith('todos');
+        expect(mod.todos).toEqual(sampleTodos);
+    });
+
+    it('loadTodosFromStorage() should handle empty storage', () => {
+        localStorageMock.getItem.mockReturnValue(null);
+        mod.loadTodosFromStorage();
+        expect(mod.todos).toEqual([]);
+    });
+
+    it('loadTodosFromStorage() should handle invalid JSON', () => {
+        localStorageMock.getItem.mockReturnValue('invalid json');
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        mod.loadTodosFromStorage();
+
+        expect(mod.todos).toEqual([]);
+        expect(consoleErrorSpy).toHaveBeenCalled();
     });
 });

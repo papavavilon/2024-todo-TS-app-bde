@@ -4,6 +4,8 @@ const APP_URL = 'http://localhost:5173';
 
 test.beforeEach(async ({page}) => {
     await page.goto(APP_URL);
+    await page.evaluate(() => window.localStorage.clear());
+    await page.goto(APP_URL);
 });
 
 test('Add, toggle, edit and remove a todo', async ({page}) => {
@@ -254,5 +256,74 @@ test.describe('Progress Bar', () => {
         await item1.locator('.remove-btn').click();
         await expect(progressText).toHaveText('0 / 0 completed (0%)');
         await expect(progressBar).toHaveAttribute('style', 'width: 0%;');
+    });
+});
+
+test.describe('Persistence and Clear All', () => {
+    async function addTodo(page: any, text: string) {
+        await page.locator('#todo-input').fill(text);
+        await page.locator('#todo-input').press('Enter');
+    }
+
+    test('Todos persist after page reload', async ({page}) => {
+        const todoList = page.locator('#todo-list');
+
+        await addTodo(page, 'Persistent Item');
+        await expect(todoList.locator('.todo-item', {hasText: 'Persistent Item'})).toBeVisible();
+
+        await page.reload();
+
+        await expect(todoList.locator('.todo-item', {hasText: 'Persistent Item'})).toBeVisible();
+    });
+
+    test('Clear All button removes all todos after confirmation', async ({page}) => {
+        const clearAllBtn = page.locator('#clear-all');
+        const todoList = page.locator('#todo-list');
+
+        await addTodo(page, 'Item 1');
+        await addTodo(page, 'Item 2');
+        await expect(todoList.locator('.todo-item')).toHaveCount(2);
+
+        page.on('dialog', async dialog => {
+            expect(dialog.message()).toContain('Are you sure');
+            await dialog.accept();
+        });
+
+        await clearAllBtn.click();
+
+        await expect(todoList.locator('.todo-item')).toHaveCount(0);
+    });
+
+    test('Clear All button does not remove todos if cancelled', async ({page}) => {
+        const clearAllBtn = page.locator('#clear-all');
+        const todoList = page.locator('#todo-list');
+
+        await addTodo(page, 'Item 1');
+        await expect(todoList.locator('.todo-item')).toHaveCount(1);
+
+        page.on('dialog', async dialog => {
+            await dialog.dismiss();
+        });
+
+        await clearAllBtn.click();
+
+        await expect(todoList.locator('.todo-item')).toHaveCount(1);
+    });
+
+    test('Clear All button shows alert if no todos exist', async ({page}) => {
+        const clearAllBtn = page.locator('#clear-all');
+        const todoList = page.locator('#todo-list');
+
+        await expect(todoList.locator('.todo-item')).toHaveCount(0);
+
+        page.on('dialog', async dialog => {
+            expect(dialog.type()).toBe('alert');
+            expect(dialog.message()).toBe('No todos to clear');
+            await dialog.dismiss();
+        });
+
+        await clearAllBtn.click();
+
+        await expect(todoList.locator('.todo-item')).toHaveCount(0);
     });
 });
