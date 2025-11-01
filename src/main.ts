@@ -1,6 +1,6 @@
 /**
  * Todo Application
- * Features: Completion toggle, Due Dates
+ * Features: Completion toggle, Due Dates, Local Storage
  */
 
 
@@ -38,6 +38,33 @@ const errorMessage = document.getElementById('error-message') as HTMLParagraphEl
 const dueDateInput = document.getElementById('due-date') as HTMLInputElement;
 const prioritySelect = document.getElementById('priority') as HTMLSelectElement;
 const sortButton = document.getElementById('sort-priority') as HTMLButtonElement;
+const clearAllButton = document.getElementById('clear-all') as HTMLButtonElement;
+
+const STORAGE_KEY = 'todos';
+
+export const loadTodosFromStorage = (): void => {
+    try {
+        const storedTodos = localStorage.getItem(STORAGE_KEY);
+        if (storedTodos) {
+            todos = JSON.parse(storedTodos);
+            console.log('Todos loaded from storage:', todos);
+        }
+    } catch (error) {
+        console.error('Error loading todos from storage:', error);
+        errorMessage.textContent = 'Error loading saved todos';
+        errorMessage.style.display = 'block';
+    }
+};
+
+
+export const saveTodosToStorage = (): void => {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+        console.log('Todos saved to storage');
+    } catch (error) {
+        console.error('Error saving todos to storage:', error);
+    }
+};
 
 
 // Step 5: Function to add a new todo
@@ -59,6 +86,8 @@ export const addTodo = (text: string, dueDate?: string, priority: priority = 'me
 // Step 6: Function to render the list of todos
 // Function to render the list of todos: This function updates the DOM to display the current list of todos.
 const renderTodos = (): void => { // void because no return - what we are doing is updating the DOM
+    saveTodosToStorage();
+
     // Clear the current list
     todoList.innerHTML = '';
 
@@ -112,33 +141,6 @@ const renderTodos = (): void => { // void because no return - what we are doing 
         todoList.appendChild(li); // Append the list item to the ul element
     });
 };
-
-// Step 7: Event listener for the form submission
-// Event listener for the form submission: This listener handles the form submission, adds the new todo, and clears the input field.
-if (todoForm) {
-    todoForm.addEventListener('submit', (event: Event) => {
-        event.preventDefault(); // Prevent the default form submission behavior
-        const text = todoInput.value.trim(); // Get the value of the input field and remove any leading or trailing whitespace
-        const dueDate = dueDateInput.value;
-        const priority = prioritySelect.value as priority;
-
-        if (text === '') {
-            console.log("Please enter a todo item"); // Provide feedback to the user
-            todoInput.classList.add('input-error'); // Add a class to highlight the error
-            errorMessage.style.display = 'block'; // Show the error message
-            return;
-        }
-
-        todoInput.classList.remove('input-error'); // Remove the error highlight if present
-        errorMessage.style.display = 'none'; // Hide the error message
-
-        addTodo(text, dueDate, priority); // Add the todo item
-
-        todoInput.value = ''; // Clear the input field
-        dueDateInput.value = '';
-    });
-}
-
 
 // Step 8: Function to removes all a todo by ID
 // Function to add event listener to the remove button - this function has an callback function that removes the todo item from the array.
@@ -245,16 +247,62 @@ export const sortTodosByPriority = (): void => {
     console.log('Todos sorted by priority');
 };
 
+export const clearAllTodos = (): void => {
+    if (todos.length === 0) {
+        alert('No todos to clear');
+        return;
+    }
+
+    if (confirm('Are you sure you want to clear all todos? This cannot be undone.')) {
+        todos = [];
+        renderTodos();
+        console.log('All todos cleared');
+    }
+};
+
 
 const initializeApp = (): void => {
+    loadTodosFromStorage();
     renderTodos();
     initializeColorPicker();
+
+    if (sortButton) {
+        sortButton.addEventListener('click', sortTodosByPriority);
+    }
+
+    if (clearAllButton) {
+        clearAllButton.addEventListener('click', clearAllTodos);
+    }
+
+    // Step 7: Event listener for the form submission
+    // Event listener for the form submission: This listener handles the form submission, adds the new todo, and clears the input field.
+    if (todoForm) {
+        todoForm.addEventListener('submit', (event: Event) => {
+            event.preventDefault(); // Prevent the default form submission behavior
+            const text = todoInput.value.trim(); // Get the value of the input field and remove any leading or trailing whitespace
+            const dueDate = dueDateInput.value;
+            const priority = prioritySelect.value as priority;
+
+            if (text === '') {
+                console.log("Please enter a todo item"); // Provide feedback to the user
+                todoInput.classList.add('input-error'); // Add a class to highlight the error
+                errorMessage.style.display = 'block'; // Show the error message
+                return;
+            }
+
+            todoInput.classList.remove('input-error'); // Remove the error highlight if present
+            errorMessage.style.display = 'none'; // Hide the error message
+
+            addTodo(text, dueDate, priority); // Add the todo item
+
+            todoInput.value = ''; // Clear the input field
+            dueDateInput.value = '';
+        });
+    }
+
     console.log('Todo app initialized');
 };
 
-if (sortButton) {
-    sortButton.addEventListener('click', sortTodosByPriority);
-}
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeApp);
