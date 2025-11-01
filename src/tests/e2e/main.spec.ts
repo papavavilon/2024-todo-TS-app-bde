@@ -381,3 +381,50 @@ test('Import invalid JSON shows parse failure alert', async ({page}) => {
 
     await page.locator('#import-json').click();
 });
+
+test.describe('Filtering', () => {
+    test('filters todos based on status and updates button classes', async ({ page }) => {
+        const input = page.locator('#todo-input');
+        const todoList = page.locator('#todo-list');
+        const filterAll = page.locator('#filter-all');
+        const filterActive = page.locator('#filter-active');
+        const filterCompleted = page.locator('#filter-completed');
+
+        const activeItem = todoList.locator('.todo-item', { hasText: 'Active Item' });
+        const completedItem = todoList.locator('.todo-item', { hasText: 'Completed Item' });
+
+        await input.fill('Active Item');
+        await input.press('Enter');
+        await input.fill('Completed Item');
+        await input.press('Enter');
+
+        await completedItem.locator('.todo-checkbox').click();
+
+        await expect(filterAll).toHaveClass(/active/);
+        await expect(filterActive).not.toHaveClass(/active/);
+        await expect(filterCompleted).not.toHaveClass(/active/);
+        await expect(activeItem).toBeVisible();
+        await expect(completedItem).toBeVisible();
+
+        await filterActive.click();
+        await expect(filterAll).not.toHaveClass(/active/);
+        await expect(filterActive).toHaveClass(/active/);
+        await expect(filterCompleted).not.toHaveClass(/active/);
+        await expect(activeItem).toBeVisible();
+        await expect(completedItem).not.toBeVisible();
+
+        await filterCompleted.click();
+        await expect(filterAll).not.toHaveClass(/active/);
+        await expect(filterActive).not.toHaveClass(/active/);
+        await expect(filterCompleted).toHaveClass(/active/);
+        await expect(activeItem).not.toBeVisible();
+        await expect(completedItem).toBeVisible();
+
+        await filterAll.click();
+        await expect(filterAll).toHaveClass(/active/);
+        await expect(filterActive).not.toHaveClass(/active/);
+        await expect(filterCompleted).not.toHaveClass(/active/);
+        await expect(activeItem).toBeVisible();
+        await expect(completedItem).toBeVisible();
+    });
+});

@@ -16,6 +16,11 @@ import './style.css';
 export type priority = 'low' | 'medium' | 'high';
 
 /**
+ * Defines the possible filtering status.
+ */
+export type filterStatus = 'all' | 'active' | 'completed';
+
+/**
  * Represents a single task in the todo list.
  */
 export interface Todo {
@@ -36,6 +41,11 @@ export interface Todo {
  */
 export let todos: Todo[] = [];
 
+/**
+ * Current selected filter.
+ */
+export let currentFilter: filterStatus = 'all';
+
 const todoInput = document.getElementById('todo-input') as HTMLInputElement; // exist in HTML file
 const todoForm = document.querySelector('.todo-form') as HTMLFormElement;    // exist in HTML file
 const todoList = document.getElementById('todo-list') as HTMLUListElement;   // exist in HTML file
@@ -49,6 +59,9 @@ const clearAllButton = document.getElementById('clear-all') as HTMLButtonElement
 const exportButton = document.getElementById('export-json') as HTMLButtonElement;
 const importButton = document.getElementById('import-json') as HTMLButtonElement;
 const importFileInput = document.getElementById('import-file') as HTMLInputElement;
+const filterAllBtn = document.getElementById('filter-all') as HTMLButtonElement;
+const filterActiveBtn = document.getElementById('filter-active') as HTMLButtonElement;
+const filterCompletedBtn = document.getElementById('filter-completed') as HTMLButtonElement;
 
 /**
  * The key used to store and retrieve todos from localStorage.
@@ -116,12 +129,23 @@ export const addTodo = (text: string, dueDate?: string, priority: priority = 'me
  */
 export const renderTodos = (): void => { // void because no return - what we are doing is updating the DOM
     saveTodosToStorage();
+    updateFilterButtons();
 
     // Clear the current list
     todoList.innerHTML = '';
 
+    const filteredTodos = todos.filter(todo => {
+        if (currentFilter === 'active') {
+            return !todo.completed;
+        }
+        if (currentFilter === 'completed') {
+            return todo.completed;
+        }
+        return true;
+    });
+
     // Iterate over the todos array and create list items for each todo
-    todos.forEach(todo => { // In this specific case, .forEach is more suitable because we are directly modifying the DOM for each todo item.
+    filteredTodos.forEach(todo => { // In this specific case, .forEach is more suitable because we are directly modifying the DOM for each todo item.
         const li = document.createElement('li');
         li.className = 'todo-item'; // Add a class to the list item
         // Use template literals to create the HTML content for each list item
@@ -331,6 +355,24 @@ export const updateProgressBar = (): void => {
 };
 
 /**
+ * Updates the visual state of the filter buttons to match the current filter.
+ */
+export const updateFilterButtons = (): void => {
+    if (filterAllBtn) filterAllBtn.classList.toggle('active', currentFilter === 'all');
+    if (filterActiveBtn) filterActiveBtn.classList.toggle('active', currentFilter === 'active');
+    if (filterCompletedBtn) filterCompletedBtn.classList.toggle('active', currentFilter === 'completed');
+};
+
+/**
+ * Sets the current filter status and re-renders the todo list.
+ * @param {filterStatus} filter - The filter to apply ('all', 'active', 'completed').
+ */
+export const setFilter = (filter: filterStatus): void => {
+    currentFilter = filter;
+    renderTodos();
+};
+
+/**
  * Clears all todos from the `todos` array after a confirmation prompt.
  * Re-renders the list.
  */
@@ -453,6 +495,18 @@ const initializeApp = (): void => {
 
     if (importFileInput) {
         importFileInput.addEventListener('change', importTodos);
+    }
+
+    if (filterAllBtn) {
+        filterAllBtn.addEventListener('click', () => setFilter('all'));
+    }
+
+    if (filterActiveBtn) {
+        filterActiveBtn.addEventListener('click', () => setFilter('active'));
+    }
+
+    if (filterCompletedBtn) {
+        filterCompletedBtn.addEventListener('click', () => setFilter('completed'));
     }
 
     // Step 7: Event listener for the form submission
