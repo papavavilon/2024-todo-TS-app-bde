@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-const MODULE_PATH = './main';
+const MODULE_PATH = '../../main';
 
 let mod: any;
 
