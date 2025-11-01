@@ -224,3 +224,21 @@ h1 {
     color: white;
     text-transform: uppercase;
 }
+
+.priority-badge.priority-high {
+    background-color: #dc3545;
+}
+
+.priority-badge.priority-medium {
+    background-color: #ffc107;
+}
+
+.priority-badge.priority-low {
+    background-color: #28a745;
+}
+
+.todo-item.completed .priority-badge {
+    background-color: #e9ecef;
+    color: #666;
+    text-decoration: line-through;
+}

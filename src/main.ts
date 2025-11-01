@@ -90,7 +90,7 @@ const renderTodos = (): void => { // void because no return - what we are doing 
             }
         }
 
-        const priorityBadge = `<span class="priority-badge" style="background-color: ${getPriorityColor(todo.priority)}">${todo.priority}</span>`;
+        const priorityBadge = `<span class="priority-badge priority-${todo.priority}">${todo.priority}</span>`;
 
         li.innerHTML = `
             <div class="todo-content">
@@ -236,19 +236,6 @@ export const isOverdue = (dueDate?: string): boolean => {
     today.setHours(0, 0, 0, 0);
     const due = new Date(dueDate);
     return due < today;
-};
-
-export const getPriorityColor = (priority: string): string => {
-    switch (priority) {
-        case 'high':
-            return '#dc3545';
-        case 'medium':
-            return '#ffc107';
-        case 'low':
-            return '#28a745';
-        default:
-            return '#6c757d';
-    }
 };
 
 export const sortTodosByPriority = (): void => {
