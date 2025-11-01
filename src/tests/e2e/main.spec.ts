@@ -148,3 +148,66 @@ test.describe('Overdue item styling', () => {
         await expect(futureItem).not.toHaveClass(/overdue/);
     });
 });
+
+
+test('Add a todo with a specific priority', async ({ page }) => {
+    const input = page.locator('#todo-input');
+    const prioritySelect = page.locator('#priority');
+    const todoList = page.locator('#todo-list');
+    const submitBtn = page.locator('button[type="submit"]');
+
+    await input.fill('High priority item');
+    await prioritySelect.selectOption('high');
+    await submitBtn.click();
+
+    const highItem = todoList.locator('.todo-item', { hasText: 'High priority item' });
+    await expect(highItem).toBeVisible();
+    await expect(highItem.locator('.priority-badge')).toHaveClass(/priority-high/);
+
+    await input.fill('Low priority item');
+    await prioritySelect.selectOption('low');
+    await submitBtn.click();
+
+    const lowItem = todoList.locator('.todo-item', { hasText: 'Low priority item' });
+    await expect(lowItem).toBeVisible();
+    await expect(lowItem.locator('.priority-badge')).toHaveClass(/priority-low/);
+
+    await input.fill('Medium priority item');
+    await prioritySelect.selectOption('medium');
+    await submitBtn.click();
+
+    const mediumItem = todoList.locator('.todo-item', { hasText: 'Medium priority item' });
+    await expect(mediumItem).toBeVisible();
+    await expect(mediumItem.locator('.priority-badge')).toHaveClass(/priority-medium/);
+});
+
+test('Sort todos by priority', async ({ page }) => {
+    const input = page.locator('#todo-input');
+    const prioritySelect = page.locator('#priority');
+    const todoList = page.locator('#todo-list');
+    const submitBtn = page.locator('button[type="submit"]');
+    const sortBtn = page.locator('#sort-priority');
+
+    await input.fill('Medium item');
+    await prioritySelect.selectOption('medium');
+    await submitBtn.click();
+
+    await input.fill('High item');
+    await prioritySelect.selectOption('high');
+    await submitBtn.click();
+
+    await input.fill('Low item');
+    await prioritySelect.selectOption('low');
+    await submitBtn.click();
+
+    const items = todoList.locator('.todo-item');
+    await expect(items.nth(0)).toContainText('Medium item');
+    await expect(items.nth(1)).toContainText('High item');
+    await expect(items.nth(2)).toContainText('Low item');
+
+    await sortBtn.click();
+
+    await expect(items.nth(0)).toContainText('High item');
+    await expect(items.nth(1)).toContainText('Medium item');
+    await expect(items.nth(2)).toContainText('Low item');
+});

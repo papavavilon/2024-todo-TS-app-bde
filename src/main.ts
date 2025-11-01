@@ -14,11 +14,15 @@ import './style.css';
 
 // Step 2: Define the Todo interface
 // Define the Todo interface: This interface defines the structure of a todo item.
+
+export type priority = 'low' | 'medium' | 'high';
+
 export interface Todo {
     id: number;
     text: string;
     dueDate?: string;
     completed: boolean;
+    priority: priority;
 }
 
 // Step 3: Initialize an empty array to store todos
@@ -32,16 +36,19 @@ const todoForm = document.querySelector('.todo-form') as HTMLFormElement;    // 
 const todoList = document.getElementById('todo-list') as HTMLUListElement;   // exist in HTML file
 const errorMessage = document.getElementById('error-message') as HTMLParagraphElement; // Should be moved to the top + added to the HTML file
 const dueDateInput = document.getElementById('due-date') as HTMLInputElement;
+const prioritySelect = document.getElementById('priority') as HTMLSelectElement;
+const sortButton = document.getElementById('sort-priority') as HTMLButtonElement;
 
 
 // Step 5: Function to add a new todo
 // Function to add a new todo: This function creates a new todo object and adds it to the array.
-export const addTodo = (text: string, dueDate?: string): Todo => {
+export const addTodo = (text: string, dueDate?: string, priority: priority = 'medium'): Todo => {
     const newTodo: Todo = {
         id: Date.now(), // Generate a unique ID based on the current timestamp
         text: text.trim(),
         dueDate: dueDate || undefined,
         completed: false,
+        priority: priority,
     };
     todos.push(newTodo);
     console.log("Todo added: ", todos); // Log the updated list of todos to the console
@@ -83,10 +90,13 @@ const renderTodos = (): void => { // void because no return - what we are doing 
             }
         }
 
+        const priorityBadge = `<span class="priority-badge priority-${todo.priority}">${todo.priority}</span>`;
+
         li.innerHTML = `
             <div class="todo-content">
                 <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} />
                 <span class="todo-text">${todo.text}</span>
+                ${priorityBadge}
                 ${dueDateDisplay}
                 <div class="todo-actions">
                     <button class="edit-btn">Edit</button>
@@ -110,6 +120,7 @@ if (todoForm) {
         event.preventDefault(); // Prevent the default form submission behavior
         const text = todoInput.value.trim(); // Get the value of the input field and remove any leading or trailing whitespace
         const dueDate = dueDateInput.value;
+        const priority = prioritySelect.value as priority;
 
         if (text === '') {
             console.log("Please enter a todo item"); // Provide feedback to the user
@@ -121,7 +132,7 @@ if (todoForm) {
         todoInput.classList.remove('input-error'); // Remove the error highlight if present
         errorMessage.style.display = 'none'; // Hide the error message
 
-        addTodo(text, dueDate); // Add the todo item
+        addTodo(text, dueDate, priority); // Add the todo item
 
         todoInput.value = ''; // Clear the input field
         dueDateInput.value = '';
@@ -227,11 +238,23 @@ export const isOverdue = (dueDate?: string): boolean => {
     return due < today;
 };
 
+export const sortTodosByPriority = (): void => {
+    const priorityOrder = {high: 1, medium: 2, low: 3};
+    todos.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    renderTodos();
+    console.log('Todos sorted by priority');
+};
+
+
 const initializeApp = (): void => {
     renderTodos();
     initializeColorPicker();
     console.log('Todo app initialized');
 };
+
+if (sortButton) {
+    sortButton.addEventListener('click', sortTodosByPriority);
+}
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeApp);
