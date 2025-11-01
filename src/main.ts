@@ -1,6 +1,6 @@
 /**
  * Todo Application
- * Features: Completion toggle, Due Dates, Priority, Progress Bar, Local Storage
+ * Features: Completion toggle, Due Dates, Priority, Progress Bar, Local Storage, JSON Import/Export
  */
 
 
@@ -36,6 +36,9 @@ const sortButton = document.getElementById('sort-priority') as HTMLButtonElement
 const progressBar = document.getElementById('progress-bar') as HTMLDivElement;
 const progressText = document.getElementById('progress-text') as HTMLSpanElement;
 const clearAllButton = document.getElementById('clear-all') as HTMLButtonElement;
+const exportButton = document.getElementById('export-json') as HTMLButtonElement;
+const importButton = document.getElementById('import-json') as HTMLButtonElement;
+const importFileInput = document.getElementById('import-file') as HTMLInputElement;
 
 const STORAGE_KEY = 'todos';
 
@@ -82,7 +85,7 @@ export const addTodo = (text: string, dueDate?: string, priority: priority = 'me
 
 // Step 6: Function to render the list of todos
 // Function to render the list of todos: This function updates the DOM to display the current list of todos.
-const renderTodos = (): void => { // void because no return - what we are doing is updating the DOM
+export const renderTodos = (): void => { // void because no return - what we are doing is updating the DOM
     saveTodosToStorage();
 
     // Clear the current list
@@ -271,6 +274,78 @@ export const clearAllTodos = (): void => {
     }
 };
 
+export const exportTodos = (): void => {
+    if (todos.length === 0) {
+        alert('No todos to export.');
+        return;
+    }
+    try {
+        const dataStr = JSON.stringify(todos, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'todos.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error exporting todos:', error);
+        alert('Failed to export todos.');
+    }
+};
+
+export const importTodos = (event: Event): void => {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) {
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const text = e.target?.result as string;
+            const importedTodos = JSON.parse(text);
+
+            if (Array.isArray(importedTodos)) {
+
+                const isValid = importedTodos.every(item =>
+                    typeof item === 'object' &&
+                    item !== null &&
+                    'id' in item &&
+                    'text' in item &&
+                    'completed' in item &&
+                    'priority' in item
+                );
+
+                if (isValid) {
+                    if (confirm('This will replace your current todo list. Are you sure?')) {
+                        todos = importedTodos;
+                        renderTodos();
+                    }
+                } else {
+                    alert('Invalid todo file format.');
+                }
+            } else {
+                alert('Invalid file content. Expected a JSON array.');
+            }
+        } catch (error) {
+            console.error('Error importing todos:', error);
+            alert('Failed to read or parse the file.');
+        } finally {
+
+            importFileInput.value = '';
+        }
+    };
+    reader.onerror = () => {
+        alert('Error reading file.');
+        importFileInput.value = '';
+    };
+    reader.readAsText(file);
+};
+
+
 
 const initializeApp = (): void => {
     loadTodosFromStorage();
@@ -283,6 +358,18 @@ const initializeApp = (): void => {
 
     if (clearAllButton) {
         clearAllButton.addEventListener('click', clearAllTodos);
+    }
+
+    if (exportButton) {
+        exportButton.addEventListener('click', exportTodos);
+    }
+
+    if (importButton) {
+        importButton.addEventListener('click', () => importFileInput.click());
+    }
+
+    if (importFileInput) {
+        importFileInput.addEventListener('change', importTodos);
     }
 
     // Step 7: Event listener for the form submission

@@ -43,7 +43,10 @@ beforeEach(async () => {
     <div class="action-buttons">
         <button id="sort-priority"></button>
         <button id="clear-all"></button>
+        <button id="export-json"></button>
+        <button id="import-json"></button>
     </div>
+    <input type="file" id="import-file" accept="application/json" style="display:none" />
     <ul id="todo-list"></ul>
     <input id="colorPicker" />
   `;
@@ -362,11 +365,39 @@ describe('LocalStorage functions', () => {
 
     it('loadTodosFromStorage() should handle invalid JSON', () => {
         localStorageMock.getItem.mockReturnValue('invalid json');
-        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+        });
 
         mod.loadTodosFromStorage();
 
         expect(mod.todos).toEqual([]);
         expect(consoleErrorSpy).toHaveBeenCalled();
+    });
+});
+
+describe('Import/Export', () => {
+    afterEach(() => {
+        if ((global as any).__ORIG_FileReader) {
+            global.FileReader = (global as any).__ORIG_FileReader;
+            delete (global as any).__ORIG_FileReader;
+        }
+        vi.restoreAllMocks();
+    });
+
+    it('exportTodos shows alert when no todos', () => {
+        const {exportTodos} = mod;
+        mod.todos.length = 0;
+
+        const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {
+        });
+        exportTodos();
+        expect(alertSpy).toHaveBeenCalledWith('No todos to export.');
+        alertSpy.mockRestore();
+    });
+
+    it('importTodos returns early if no file selected', () => {
+        const {importTodos} = mod;
+        const event = {target: {files: []}} as unknown as Event;
+        expect(() => importTodos(event)).not.toThrow();
     });
 });

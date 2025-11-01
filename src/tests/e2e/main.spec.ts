@@ -327,3 +327,57 @@ test.describe('Persistence and Clear All', () => {
         await expect(todoList.locator('.todo-item')).toHaveCount(0);
     });
 });
+
+test('Export button shows alert when no todos exist', async ({page}) => {
+    await page.goto(APP_URL);
+    const exportBtn = page.locator('#export-json');
+
+    page.on('dialog', async dialog => {
+        expect(dialog.type()).toBe('alert');
+        expect(dialog.message()).toBe('No todos to export.');
+        await dialog.dismiss();
+    });
+
+    await exportBtn.click();
+});
+
+test('Import JSON replaces todos after confirmation (hidden input)', async ({page}) => {
+    await page.goto(APP_URL);
+
+    const fileContent = JSON.stringify([
+        { id: 999, text: 'Imported E2E', completed: false, priority: 'medium' }
+    ]);
+
+    await page.setInputFiles('#import-file', {
+        name: 'todos.json',
+        mimeType: 'application/json',
+        buffer: Buffer.from(fileContent),
+    });
+
+    page.on('dialog', async dialog => {
+        await dialog.accept();
+    });
+
+    await page.locator('#import-json').click();
+
+    await expect(page.locator('.todo-item', { hasText: 'Imported E2E' })).toBeVisible();
+});
+
+test('Import invalid JSON shows parse failure alert', async ({page}) => {
+    await page.goto(APP_URL);
+
+    const badContent = 'not json';
+    await page.setInputFiles('#import-file', {
+        name: 'bad.json',
+        mimeType: 'application/json',
+        buffer: Buffer.from(badContent),
+    });
+
+    page.on('dialog', async dialog => {
+        expect(dialog.type()).toBe('alert');
+        expect(dialog.message()).toBe('Failed to read or parse the file.');
+        await dialog.dismiss();
+    });
+
+    await page.locator('#import-json').click();
+});
